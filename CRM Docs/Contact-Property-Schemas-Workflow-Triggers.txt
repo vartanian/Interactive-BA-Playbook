@@ -1,0 +1,92 @@
+Below are detailed instructions and best practices to set up contact property schemas and workflow triggers across HubSpot, Zoho CRM, and Salesforce based on the tags and structure we’ve built.
+
+🔧 1. HubSpot CRM Setup
+🏷 Custom Contact Properties
+Create the following properties in Settings → Properties → Create Property:
+
+Property Name Type  Description
+Industry Type Dropdown Select Restaurant, Laundromat, Auto Repair, etc.
+Business Tags Multi-line Text Store comma-separated tags (for searches & filters)
+Pitch Hook  Multi-line Text Custom messaging for emails or sales scripts
+Valuation Interest  Single Checkbox Use to mark prospects showing interest
+
+🔁 Workflow Logic (Sales Pipeline/Automation)
+Trigger:
+
+Contact property Valuation Interest is known OR Industry Type is any of [select]
+
+Actions:
+
+Assign to a Sales Rep or Agent.
+
+Send internal email: “Hot lead - valuation interest marked.”
+
+Create task: “Follow up with personalized call based on pitch hook.”
+
+Send personalized email using Pitch Hook.
+
+Optional Branches:
+
+If Industry Type = Laundromat → Add to List “Hot Laundromats”
+
+If Valuation Interest = True → Trigger SMS follow-up (via Twilio integration)
+
+🔧 2. Zoho CRM Setup
+🏷 Custom Fields (Modules > Leads or Contacts > Layouts)
+Field Name  Type  Description
+Industry Segment  Picklist  Align with tags (Restaurant, Laundromat, etc.)
+Business Tags Multi-line Text Store comma-separated CRM tags
+Pitch Messaging Multi-line Text Use for email templates or call scripts
+Seller Readiness  Checkbox  Qualify interest
+
+🔁 Workflow Automation
+Trigger: Field Seller Readiness is updated to "Checked"
+
+Action Steps:
+
+Assign lead to agent group (e.g., North Jersey Team)
+
+Send internal alert: “Qualified Seller Lead - {Industry Segment}”
+
+Schedule task: “Run initial valuation call”
+
+Optional: Email with subject: “Here's what your business could be worth”
+
+🔧 3. Salesforce CRM Setup
+🏷 Custom Fields on Leads or Accounts
+Field Name  Type  Notes
+Business_Industry__c  Picklist  Restaurant, Laundromat, etc.
+CRM_Tags__c Long Text Used for internal filtering
+Pitch_Hook__c Long Text Sync with call/email content
+Valuation_Stage__c  Picklist  Not Interested, Curious, Ready, In Valuation
+
+🔁 Workflow Rule or Process Builder
+Trigger: When Valuation_Stage__c = Ready
+
+Process Builder Flow:
+
+Create Task for assigned rep: “Schedule Valuation Call”
+
+Send internal Chatter notification to Sales Manager
+
+Update Opportunity Stage (if exists) to "Engagement"
+
+Send dynamic email using Pitch_Hook__c and Business_Industry__c
+
+🧩 BONUS: Example Email Template
+Subject: "Curious What Your Business Could Be Worth in Today's Market?"
+
+Body:
+
+Hi [First Name],
+
+Based on your industry — {{ Business_Industry__c }} — now may be a great time to consider your options.
+
+Here’s why:
+{{ Pitch_Hook__c }}
+
+I’d love to offer you a no-cost, confidential review of your business and what buyers might pay today.
+
+Let’s set up a 15-minute call. No pressure — just good intel.
+
+— Vic Vartanian

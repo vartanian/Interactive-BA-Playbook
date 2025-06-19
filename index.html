@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Legacy Call: Interactive Playbook</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A dashboard-style, multi-section SPA is used to transform the comprehensive report into a practical tool for a business broker. The structure is task-oriented, allowing the user to instantly access different components as needed (e.g., jumping from market data to specific rebuttals). A sticky navigation bar provides quick access to three core areas: 'The Foundation' (market context, seller psychology, and the broker's legal mandate), 'The Call Framework' (the complete, multi-stage script and objection handling), and 'The Toolkit' (post-call strategy and reference documents). This non-linear design is superior for the target user, who needs to find specific information quickly during call preparation or a live conversation. Key interactions include dynamic charts for NJ market data, clickable cards to explore detailed seller motivations, a searchable rebuttal matrix using the report's exact Acknowledge-Probe-Pivot structure, and interactive accordions for the detailed meeting agenda and checklists. -->
+    <!-- Visualization & Content Choices: 
+        - NJ Business Data (Section 1) -> Goal: Inform/Contextualize -> Viz: Key Stat Cards + Bar Chart (Chart.js) -> Interaction: Hover tooltips -> Justification: Quickly visualizes the challenging market conditions (high taxes, inflation, labor issues) cited in the report.
+        - Seller Psychology (Section 2) -> Goal: Inform/Guide -> Viz: Interactive Cards (HTML/CSS/JS) -> Interaction: Click a card (e.g., 'Burnout') to display detailed talking points on the 'Liberation and Legacy' theme -> Justification: Provides just-in-time messaging guidance based on the report's deep psychological analysis.
+        - Broker's Mandate (Section 3) -> Goal: Establish Authority -> Viz: Styled Info Blocks -> Interaction: None -> Justification: Presents the critical NJ licensing and Statute of Frauds information as a foundation of trust.
+        - Master Script (Sections 4-7) -> Goal: Guide Conversation -> Viz: Vertical Accordion (HTML/CSS/JS) -> Interaction: Click to expand each step of the call (Opening, Value Prop, Discovery, Close) -> Justification: Breaks down the detailed script into digestible, easy-to-follow stages with annotations.
+        - Rebuttal Matrix (Section 8) -> Goal: Provide Instant Solutions -> Viz: HTML Table -> Interaction: Live search/filter bar -> Justification: A highly practical tool for finding the correct Acknowledge-Probe-Pivot response instantly during a call.
+        - Deal Structures (Section 12) -> Goal: Compare/Educate -> Viz: Detailed HTML Table -> Interaction: Row highlight on hover/click -> Justification: Clarifies complex options (Asset vs. Stock, Earnouts) from the report in an easy-to-compare format.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #333D4B;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 45vh;
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #1E40AF;
+            border-bottom-color: #1E40AF;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+        }
+        .btn {
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header id="header" class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-gray-800">The Legacy Call Playbook</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#foundation" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">The Foundation</a>
+                        <a href="#framework" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">The Call Framework</a>
+                        <a href="#toolkit" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">The Toolkit</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 focus:outline-none">
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#foundation" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700">The Foundation</a>
+                <a href="#framework" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700">The Call Framework</a>
+                <a href="#toolkit" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700">The Toolkit</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        
+        <section id="hero" class="text-center mb-16 md:mb-24">
+            <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight text-gray-900">The Interactive Playbook for Business Acquisition</h2>
+            <p class="mt-4 max-w-3xl mx-auto text-lg md:text-xl text-gray-600">This tool translates the comprehensive "Legacy Call" report into an actionable, real-time guide. Use it to master the market context, the seller's psychology, and the proven framework for successful client engagement in New Jersey.</p>
+        </section>
+
+        <!-- SECTION 1: THE FOUNDATION -->
+        <section id="foundation" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">The Foundation: Understanding the Seller's World</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">To effectively engage an owner, you must first demonstrate a deep understanding of their world. This section details the acute challenges of the New Jersey business landscape, the deep psychology of the seller, and the legal mandate that underpins your professional authority.</p>
+            </div>
+            
+            <div class="space-y-12">
+                <!-- NJ Business Landscape -->
+                <div class="card p-6 lg:p-8">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-2">Section 1: The NJ Business Landscape</h3>
+                    <p class="mb-6 text-gray-600">The Garden State's high-cost, high-regulation environment creates constant pressure on owners, making a strategic exit a timely and astute maneuver.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 text-center">
+                        <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-amber-700">11.5%</div>
+                            <div class="text-sm font-medium text-amber-600 mt-1">Highest Corporate Tax Rate in Nation</div>
+                        </div>
+                        <div class="bg-red-50 border border-red-200 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-red-700">45%</div>
+                            <div class="text-sm font-medium text-red-600 mt-1">Reported a Loss (vs. 32% Profit)</div>
+                        </div>
+                        <div class="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-orange-700">46%</div>
+                            <div class="text-sm font-medium text-orange-600 mt-1">Substantially Impacted by Inflation</div>
+                        </div>
+                         <div class="bg-sky-50 border border-sky-200 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-sky-700">77%</div>
+                            <div class="text-sm font-medium text-sky-600 mt-1">Cite Lack of Job Candidates</div>
+                        </div>
+                    </div>
+                     <p class="text-sm text-gray-500 italic text-center mb-6">Source: NJBIA Business Outlook Surveys</p>
+                    <div class="chart-container">
+                        <canvas id="njChallengesChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Seller Psychology -->
+                <div class="card p-6 lg:p-8">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-2">Section 2: The Psychology of the Seller</h3>
+                    <p class="mb-6 text-gray-600">Selling a business is a profound emotional event. The key is to address the central conflict: the owner's desire for **liberation** clashing with their fear of losing their **legacy**. Frame the sale as a triumphant transition: "watching their baby graduate."</p>
+                    <div class="flex flex-wrap gap-3 mb-6">
+                        <button class="motivation-btn btn bg-blue-600 text-white py-2 px-4 rounded-full font-medium text-sm" data-motivation="retirement">Retirement</button>
+                        <button class="motivation-btn btn bg-gray-200 text-gray-700 py-2 px-4 rounded-full font-medium text-sm" data-motivation="burnout">Burnout</button>
+                        <button class="motivation-btn btn bg-gray-200 text-gray-700 py-2 px-4 rounded-full font-medium text-sm" data-motivation="legacy">Succession</button>
+                        <button class="motivation-btn btn bg-gray-200 text-gray-700 py-2 px-4 rounded-full font-medium text-sm" data-motivation="capital">Capital Needs</button>
+                        <button class="motivation-btn btn bg-gray-200 text-gray-700 py-2 px-4 rounded-full font-medium text-sm" data-motivation="disputes">Partnership Disputes</button>
+                    </div>
+                    <div id="motivation-content" class="bg-gray-50 p-4 rounded-lg border flex-grow">
+                        <h4 id="motivation-title" class="font-bold text-lg mb-2 text-gray-800"></h4>
+                        <p id="motivation-text" class="text-gray-700"></p>
+                    </div>
+                </div>
+
+                <!-- Broker's Mandate -->
+                <div class="card p-6 lg:p-8">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-2">Section 3: The Broker's Mandate</h3>
+                    <p class="mb-6 text-gray-600">Your authority is built on professionalism and adherence to NJ law. Highlighting these points builds immediate trust and differentiates you from the competition.</p>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                            <h4 class="font-semibold text-blue-800">NJ Real Estate License Requirement</h4>
+                            <p class="text-sm text-blue-700 mt-2">Transactions involving real property interest (including most commercial leases) mandate a valid NJ Real Estate License. Mentioning your licensure signals compliance and professionalism.</p>
+                        </div>
+                         <div class="bg-green-50 border border-green-200 p-4 rounded-lg">
+                            <h4 class="font-semibold text-green-800">Statute of Frauds (N.J.S.A. 25:1-16)</h4>
+                            <p class="text-sm text-green-700 mt-2">This law requires broker commission agreements to be in writing to be enforceable. Highlighting your commitment to "state-mandated transparent agreements" establishes a foundation of trust.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: THE CALL FRAMEWORK -->
+        <section id="framework" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">The Call Framework: A Consultative Approach</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">This section provides the complete conversational guide. Use the master script to structure your call and the rebuttal matrix to confidently handle any objection that arises.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
+                <div class="lg:col-span-3 card p-6">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-6">The Master Script (Sections 4-7)</h3>
+                    <div id="script-accordion"></div>
+                </div>
+
+                <div class="lg:col-span-2 card p-6">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">The Rebuttal Matrix (Section 8)</h3>
+                    <p class="mb-4 text-gray-600">Use this tool to find the perfect response instantly. Start typing an objection like "not selling" or "too busy".</p>
+                    <input type="text" id="rebuttal-search" placeholder="Search objections..." class="w-full px-4 py-2 border border-gray-300 rounded-md mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <div class="h-[400px] overflow-y-auto pr-2">
+                        <div id="rebuttal-list" class="space-y-4"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- SECTION 3: THE TOOLKIT -->
+        <section id="toolkit" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">The Toolkit: Post-Call Strategy & Resources</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">A successful call is just the beginning. This section equips you with the agendas, checklists, and strategic concepts needed to guide the client from the first meeting to a successful closing.</p>
+            </div>
+
+            <div class="space-y-8">
+                <div class="card p-6">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">The First Meeting Agenda (Section 11)</h3>
+                    <p class="mb-6 text-gray-600">Use this structured agenda to guide the first meeting professionally, gather critical information, and define a clear path forward. Click each item to see key objectives and script points.</p>
+                    <div id="agenda-accordion" class="space-y-2"></div>
+                </div>
+
+                <div class="card p-6">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Deal Structuring Options (Table 12.1)</h3>
+                    <p class="mb-6 text-gray-600">Elevate the conversation beyond price by explaining deal structures. This demonstrates strategic depth and manages expectations. Click a row to see details.</p>
+                    <div class="overflow-x-auto" id="deal-structure-table">
+                        <!-- Table will be generated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-800 mt-16 md:mt-24">
+        <div class="container mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center text-gray-400 text-sm">
+            <p>&copy; 2025 The Legacy Call Interactive Playbook. Based on the full research report.</p>
+        </div>
+    </footer>
+
+    <!-- MODAL FOR DEAL STRUCTURE DETAILS -->
+    <div id="deal-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg relative">
+            <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800">&times;</button>
+            <h3 id="modal-title" class="text-2xl font-bold mb-4"></h3>
+            <p id="modal-description" class="text-gray-600 mb-4"></p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <h4 class="font-semibold">Pros for Seller</h4>
+                    <p id="modal-pros" class="text-gray-600"></p>
+                </div>
+                 <div>
+                    <h4 class="font-semibold">Cons for Seller</h4>
+                    <p id="modal-cons" class="text-gray-600"></p>
+                </div>
+            </div>
+             <div class="mt-4">
+                <h4 class="font-semibold">Best For...</h4>
+                <p id="modal-best-for" class="text-gray-600"></p>
+            </div>
+        </div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const appData = {
+        njChallenges: {
+            labels: ['Unfavorable Tax Rating', 'Impacted by Inflation', 'Face Staffing Shortages'],
+            data: [85, 90, 55] // 46% substantial + 44% somewhat = 90% total impacted
+        },
+        sellerMotivations: {
+            retirement: {
+                title: 'Retirement & The Next Stage',
+                text: "The most common driver. After decades of effort, owners desire to 'enjoy the fruits of their labor.' Critically, 40% of small business owners rely on the sale to fund retirement. The conversation should be framed around achieving financial freedom and 'leaving the business on their own terms.'"
+            },
+            burnout: {
+                title: 'Burnout, Fatigue, and Health',
+                text: "A potent, often unspoken motivator. Relentless pressure and long hours take a physical and mental toll. The appeal lies in 'regaining independence in terms of finances and time' and 'passing along administrative headaches to a new buyer.' Frame the sale as relief."
+            },
+            legacy: {
+                title: 'Succession & Legacy Challenges',
+                text: "The dream of passing a business to family often fails (less than 10% make it to the 3rd generation). When children lack interest or skills, a sale to a qualified buyer is the most effective way to ensure 'the continuity of the business,' protecting the owner's legacy and employees."
+            },
+            capital: {
+                title: 'Need for Capital & Resources',
+                text: "Many businesses hit a growth plateau because they lack the capital for the next stage of expansion. A sale to a larger entity provides the funds needed to grow, protecting the business from stagnation or being overtaken by competitors."
+            },
+            disputes: {
+                title: 'Partnership Disputes',
+                text: "Diverging goals and visions between owners can lead to conflict and operational stalemate, destroying business value. A sale often presents the most effective and palatable resolution for all parties before the business suffers irreparable harm."
+            }
+        },
+        masterScript: [
+            {
+                title: 'Step 1: The Opening (First 60 Seconds)',
+                content: `<strong>Goal:</strong> Establish credibility, pique curiosity, and secure permission to proceed.<br><br><strong>Script:</strong> "Hi [Owner's Name], my name is [Your Name] with [Your Firm]. I'm a Senior Business Agent based right here in [Your County], and for over 50 years, my specialty has been advising owners of [Owner's Industry] companies on their long-term strategic options. I know I'm calling unexpectedly—could you spare me just 60 seconds?"<br><br><strong>Annotation:</strong> This permission-based opener immediately establishes local relevance, deep experience, and a professional, respectful tone.`
+            },
+            {
+                title: 'Step 2: The Value Proposition',
+                content: `<strong>Goal:</strong> Reframe the call from "selling" to "unlocking value."<br><br><strong>Script:</strong> "Thank you. The reason for my call is specific... We're seeing a particularly strong valuation environment for well-run companies in your sector right now. Most successful owners I work with aren't actively 'selling.' They're simply looking to understand the true market value of their life's work... My goal is to introduce myself as a confidential resource for that purpose."<br><br><strong>Annotation:</strong> Focuses on the owner's trapped, illiquid asset and the opportunity to convert it to liquid wealth. Uses scarcity ("strong valuation environment") to create urgency.`
+            },
+            {
+                title: 'Step 3: The Art of Discovery (SPIN Questions)',
+                content: `<strong>Goal:</strong> Guide the owner to self-realize their own needs and frustrations.<br><br><strong>Situation Question:</strong> "How did you get started in this business? I'm always fascinated by the stories behind successful local companies."<br><strong>Problem Question:</strong> "As you look out over the next 3-5 years, what do you see as the biggest challenges on the horizon?"<br><strong>Implication Question:</strong> "What's the impact of that constant pressure on you personally? Does it affect your ability to step away?"<br><strong>Need-Payoff Question:</strong> "What would it mean for you and your family if you could solve that—if you could secure the company's future and unlock its full financial value?"<br><br><strong>Annotation:</strong> This structured questioning builds from rapport to pain points to personal consequences, making the need for a solution clear.`
+            },
+            {
+                title: 'Step 4: The Close (Securing the Meeting)',
+                content: `<strong>Goal:</strong> Propose a clear, low-risk, high-value next step.<br><br><strong>Script:</strong> "Based on our conversation, it seems like a brief, confidential meeting would be a logical next step. I'd like to schedule a 30-minute, no-obligation discussion to show you some data on recent sales of similar businesses and outline what a potential valuation range could look like. I have time next Tuesday afternoon or Thursday morning. Which works better for you?"<br><br><strong>Annotation:</strong> This is a confident, Assumptive Close. It provides two choices, which is more effective than a yes/no question, and clearly states the value the owner will receive.`
+            }
+        ],
+        rebuttals: [
+            {
+                objection: "I'm not interested / I'm not selling.",
+                acknowledge: "I completely understand, and frankly, I'd be surprised if you were. The most successful businesses, like yours, are rarely for sale.",
+                probe: "Just for my own understanding, is that because the timing is off personally, or you have a rock-solid succession plan already in place?",
+                pivot: "Of course. My goal wasn't to convince you to sell, but simply to introduce myself. I provide confidential market valuations for owners, at no cost, just so they know their options for future planning. Would you be opposed to a brief 15-minute chat to discuss current valuation trends?"
+            },
+            {
+                objection: "I'm too busy right now.",
+                acknowledge: "I can certainly appreciate that, you're running a business. I won't keep you.",
+                probe: "Is this just a particularly busy week, or is the foreseeable future looking just as packed?",
+                pivot: "I respect your time. Would it be easier if I sent a brief email with my contact info and a link to my calendar? You could pick a 15-minute slot that works for you, whenever that might be."
+            },
+            {
+                objection: "I'm just going to pass it to my kids.",
+                acknowledge: "That's the classic American dream, and it's wonderful when a family can continue a legacy like that.",
+                probe: "That's great. Have you started the formal process? Many owners find the tax implications and structuring the actual transfer can be quite complex.",
+                pivot: "We actually specialize in structuring tax-efficient family transitions. It might be valuable to have a brief chat to compare strategies. There's no cost, and it could provide useful insights."
+            },
+            {
+                objection: "My business isn't worth enough to sell.",
+                acknowledge: "I hear that sometimes, but in my experience, owners are often sitting on far more value than they realize.",
+                probe: "What gives you that impression? Have you had a formal, market-based valuation done by a specialist in the last year?",
+                pivot: "Valuations have shifted significantly. A core part of my service is providing a complimentary, confidential Broker's Opinion of Value. It gives a clear, data-backed picture. Would a 20-minute discussion to begin that process be a poor use of your time?"
+            },
+            {
+                objection: "I don't trust brokers / I had a bad experience.",
+                acknowledge: "I'm genuinely sorry to hear that. A negative experience is incredibly frustrating.",
+                probe: "To help me understand, what about that past experience was most concerning for you?",
+                pivot: "I understand your hesitation. That's why my practice is built on transparency and strict adherence to New Jersey state law, which requires our agreements to be in writing. Perhaps we could have a brief introductory call, and you can judge for yourself if my approach is different. Fair enough?"
+            },
+            {
+                objection: "Just send me some information.",
+                acknowledge: "Absolutely, I'd be happy to. I want to make sure I send what's most relevant.",
+                probe: "So I can tailor it, are you more interested in current valuation multiples, or the confidential process of how a sale is managed?",
+                pivot: "Perfect. I'll send an email with that information and my calendar link. After you review, feel free to book a quick 15-minute call if questions come to mind. Sound reasonable?"
+            }
+        ],
+        firstMeetingAgenda: [
+            { title: "1. Rapport & Premise (5 mins)", content: "<strong>Objective:</strong> Set the stage and build a human connection.<br><strong>Script:</strong> 'Thank you for your time. As we discussed, the goal today is a confidential, no-obligation exploration of your goals and how the current market might align with them.'" },
+            { title: "2. The Owner's Story (10 mins)", content: "<strong>Objective:</strong> Show respect and gain insight into their emotional connection to the business.<br><strong>Script:</strong> 'Before we dive in, I'd love to hear the story from your perspective. How did you start the business?'" },
+            { title: "3. Deeper Discovery (15 mins)", content: "<strong>Objective:</strong> Expand on the call's discovery, focusing on operations, people, and personal vision.<br><strong>Key Questions:</strong> What does your typical day look like? Tell me about your key employees. What does life after the business look like for you?" },
+            { title: "4. The Process Explained (5 mins)", content: "<strong>Objective:</strong> Demystify the sale process and build trust.<br><strong>Key Points:</strong> Briefly walk through Valuation -> Confidential Marketing -> Buyer Screening -> Due Diligence -> Closing. Emphasize confidentiality at every step." },
+            { title: "5. Clear Next Steps (5 mins)", content: "<strong>Objective:</strong> End with a defined, low-risk action item.<br><strong>Script:</strong> 'This was very productive. The logical next step is a standard Non-Disclosure Agreement. That allows me to prepare a formal Broker's Opinion of Value for you, at no cost. How does that sound?'" }
+        ],
+        dealStructures: [
+            { name: 'Asset Sale', description: 'Buyer purchases specific assets (e.g., equipment, inventory), leaving the legal entity and unwanted liabilities with the seller.', pros: 'Offers buyer a clean slate from certain past liabilities.', cons: 'Potential for "double taxation" for C-Corps. Can be more complex to transfer contracts.', bestFor: 'Buyers avoiding unknown liabilities. The most common structure for small business sales.' },
+            { name: 'Stock Sale', description: 'Buyer purchases the owner\'s shares, acquiring the entire company, including all assets and liabilities (known and unknown).', pros: 'Generally more favorable tax treatment (capital gains rates). Simpler transition for contracts. Provides a clean exit.', cons: 'Buyers are hesitant to assume unknown liabilities, which can lower the offer price.', bestFor: 'Sellers of C/S-Corps seeking maximum tax advantages and a complete break.' },
+            { name: 'Seller Financing', description: 'Seller acts as the bank, accepting a portion of the purchase price in installments over time, with interest.', pros: 'Attracts a much larger pool of buyers. Can command a significantly higher price (15%+ more). Creates an income stream.', cons: 'Risk of buyer default. Less cash received at closing. Seller remains tied to the business\'s success.', bestFor: 'Healthy, stable businesses where seller is confident in the new owner.' },
+            { name: 'Earnout', description: 'A portion of the purchase price is made contingent on the business achieving specific performance targets post-sale.', pros: 'Bridges a valuation gap when a buyer is skeptical of projections. Allows seller to share in future upside.', cons: 'Payment is not guaranteed. Can lead to post-sale disputes. Seller often must remain involved.', bestFor: 'High-growth businesses with uncertain future performance.' }
+        ]
+    };
+
+    // --- Mobile Menu ---
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileMenuButton.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+    });
+    document.querySelectorAll('#mobile-menu a').forEach(link => {
+        link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+    });
+
+    // --- Active Nav Link Scrolling ---
+    const sections = document.querySelectorAll('section');
+    const navLinks = document.querySelectorAll('header a');
+    window.onscroll = () => {
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (pageYOffset >= sectionTop - 80) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href')?.includes(current)) {
+                link.classList.add('active');
+            }
+        });
+    };
+
+    // --- NJ Challenges Chart ---
+    const chartCtx = document.getElementById('njChallengesChart')?.getContext('2d');
+    if (chartCtx) {
+        new Chart(chartCtx, {
+            type: 'bar',
+            data: {
+                labels: appData.njChallenges.labels,
+                datasets: [{
+                    label: '% of NJ Businesses Facing Challenge',
+                    data: appData.njChallenges.data,
+                    backgroundColor: ['#DC2626', '#F97316', '#3B82F6'],
+                    borderColor: '#fff',
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Top Challenges for NJ Business Owners', font: { size: 16 } },
+                    tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.raw}%` } }
+                },
+                scales: { x: { beginAtZero: true, max: 100 } }
+            }
+        });
+    }
+
+    // --- Seller Motivations ---
+    const motivationButtons = document.querySelectorAll('.motivation-btn');
+    const motivationTitle = document.getElementById('motivation-title');
+    const motivationText = document.getElementById('motivation-text');
+
+    function updateMotivationContent(motivationKey) {
+        const motivationData = appData.sellerMotivations[motivationKey];
+        motivationTitle.textContent = motivationData.title;
+        motivationText.innerHTML = motivationData.text; // Use innerHTML for potential formatting
+
+        motivationButtons.forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white');
+            btn.classList.add('bg-gray-200', 'text-gray-700');
+        });
+        const activeButton = document.querySelector(`.motivation-btn[data-motivation="${motivationKey}"]`);
+        activeButton.classList.add('bg-blue-600', 'text-white');
+        activeButton.classList.remove('bg-gray-200', 'text-gray-700');
+    }
+
+    motivationButtons.forEach(button => {
+        button.addEventListener('click', () => updateMotivationContent(button.dataset.motivation));
+    });
+
+    // --- Accordions ---
+    function createAccordion(containerId, data) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = data.map((item, index) => `
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <h2>
+                    <button type="button" class="accordion-button flex items-center justify-between w-full p-4 font-medium text-left text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none">
+                        <span class="flex-1">${item.title}</span>
+                        <svg class="w-6 h-6 shrink-0 transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    </button>
+                </h2>
+                <div class="accordion-content">
+                    <div class="p-4 border-t border-gray-200 text-gray-600 bg-white">
+                        ${item.content}
+                    </div>
+                </div>
+            </div>
+        `).join(containerId === 'script-accordion' ? '<div class="h-2"></div>' : '');
+
+        container.querySelectorAll('.accordion-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.parentElement.nextElementSibling;
+                const svg = button.querySelector('svg');
+                const isOpening = content.style.maxHeight === '0px' || !content.style.maxHeight;
+
+                // Close all others in the same group
+                const allButtons = container.querySelectorAll('.accordion-button');
+                allButtons.forEach(btn => {
+                    if (btn !== button) {
+                        btn.parentElement.nextElementSibling.style.maxHeight = '0px';
+                        btn.querySelector('svg').style.transform = '';
+                    }
+                });
+
+                if (isOpening) {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    svg.style.transform = 'rotate(180deg)';
+                } else {
+                    content.style.maxHeight = '0px';
+                    svg.style.transform = '';
+                }
+            });
+        });
+    }
+
+    createAccordion('script-accordion', appData.masterScript);
+    createAccordion('agenda-accordion', appData.firstMeetingAgenda);
+
+    // --- Rebuttal Matrix ---
+    const rebuttalSearch = document.getElementById('rebuttal-search');
+    const rebuttalList = document.getElementById('rebuttal-list');
+
+    function renderRebuttals(filter = '') {
+        const filteredRebuttals = appData.rebuttals.filter(r => 
+            r.objection.toLowerCase().includes(filter.toLowerCase())
+        );
+        
+        if (!rebuttalList) return;
+        
+        if (filteredRebuttals.length === 0) {
+            rebuttalList.innerHTML = `<p class="text-gray-500">No matches found.</p>`;
+            return;
+        }
+
+        rebuttalList.innerHTML = filteredRebuttals.map(r => `
+            <div class="p-4 bg-gray-50 rounded-lg border">
+                <h4 class="font-bold text-gray-800">${r.objection}</h4>
+                <div class="mt-3 space-y-2 text-sm">
+                    <p><strong class="text-blue-600">Acknowledge:</strong> <span class="text-gray-700">${r.acknowledge}</span></p>
+                    <p><strong class="text-green-600">Probe:</strong> <span class="text-gray-700">${r.probe}</span></p>
+                    <p><strong class="text-purple-600">Pivot:</strong> <span class="text-gray-700">${r.pivot}</span></p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    if (rebuttalSearch) {
+        rebuttalSearch.addEventListener('input', (e) => renderRebuttals(e.target.value));
+    }
+    
+    // --- Deal Structure Table & Modal ---
+    const dealTableContainer = document.getElementById('deal-structure-table');
+    const modal = document.getElementById('deal-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+
+    function renderDealTable() {
+        if (!dealTableContainer) return;
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm text-left text-gray-500';
+        table.innerHTML = `
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-4 py-3">Structure</th>
+                    <th scope="col" class="px-4 py-3 hidden md:table-cell">Description</th>
+                    <th scope="col" class="px-4 py-3">View Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${appData.dealStructures.map((d, index) => `
+                    <tr class="bg-white border-b hover:bg-blue-50 cursor-pointer" data-index="${index}">
+                        <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">${d.name}</td>
+                        <td class="px-4 py-3 hidden md:table-cell">${d.description.substring(0, 100)}...</td>
+                        <td class="px-4 py-3"><span class="text-blue-600 font-semibold">Details &rarr;</span></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+        dealTableContainer.appendChild(table);
+
+        table.querySelectorAll('tbody tr').forEach(row => {
+            row.addEventListener('click', () => {
+                const deal = appData.dealStructures[row.dataset.index];
+                document.getElementById('modal-title').textContent = deal.name;
+                document.getElementById('modal-description').textContent = deal.description;
+                document.getElementById('modal-pros').textContent = deal.pros;
+                document.getElementById('modal-cons').textContent = deal.cons;
+                document.getElementById('modal-best-for').textContent = deal.bestFor;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+        });
+    }
+
+    if(modal) {
+        closeModalBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        });
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        });
+    }
+
+    // --- Initializations ---
+    updateMotivationContent('retirement');
+    renderRebuttals();
+    renderDealTable();
+
+});
+</script>
+</body>
+</html>
