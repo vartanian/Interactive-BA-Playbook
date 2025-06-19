@@ -15,8 +15,8 @@
         - NJ Business Data (Section 1) -> Goal: Inform/Contextualize -> Viz: Key Stat Cards + Bar Chart (Chart.js) -> Interaction: Hover tooltips -> Justification: Quickly visualizes the challenging market conditions (high taxes, inflation, labor issues) cited in the report.
         - Seller Psychology (Section 2) -> Goal: Inform/Guide -> Viz: Interactive Cards (HTML/CSS/JS) -> Interaction: Click a card (e.g., 'Burnout') to display detailed talking points on the 'Liberation and Legacy' theme -> Justification: Provides just-in-time messaging guidance based on the report's deep psychological analysis.
         - Broker's Mandate (Section 3) -> Goal: Establish Authority -> Viz: Styled Info Blocks -> Interaction: None -> Justification: Presents the critical NJ licensing and Statute of Frauds information as a foundation of trust.
-        - Master Script (Sections 4-7) -> Goal: Guide Conversation -> Viz: Vertical Accordion (HTML/CSS/JS) -> Interaction: Click to expand each step of the call (Opening, Value Prop, Discovery, Close) -> Justification: Breaks down the detailed script into digestible, easy-to-follow stages with annotations.
-        - Rebuttal Matrix (Section 8) -> Goal: Provide Instant Solutions -> Viz: HTML Table -> Interaction: Live search/filter bar -> Justification: A highly practical tool for finding the correct Acknowledge-Probe-Pivot response instantly during a call.
+        - Master Script (Sections 4-7) -> Goal: Guide Conversation -> Viz: Vertical Accordion (HTML/CSS/JS) + Gemini API -> Interaction: Click "Practice with AI" button to open a roleplay chat modal -> Justification: Transforms the static script into an active training tool.
+        - Rebuttal Matrix (Section 8) -> Goal: Provide Instant Solutions -> Viz: HTML Table + Gemini API -> Interaction: Live search/filter bar and a new "AI Rebuttal Assistant" to generate custom responses -> Justification: A highly practical tool for finding or creating the correct Acknowledge-Probe-Pivot response instantly during a call.
         - Deal Structures (Section 12) -> Goal: Compare/Educate -> Viz: Detailed HTML Table -> Interaction: Row highlight on hover/click -> Justification: Clarifies complex options (Asset vs. Stock, Earnouts) from the report in an easy-to-compare format.
     -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
@@ -67,6 +67,18 @@
             overflow: hidden;
             transition: max-height 0.5s ease-in-out;
         }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #1E40AF;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -76,7 +88,6 @@
             <div class="flex items-center justify-between h-16">
                 <div class="flex-shrink-0">
                     <h1 class="text-xl font-bold text-gray-800">The Legacy Call Playbook</h1>
-                    <span style="font: small-caption; color: #000; font-weight: bold;font-style: italic;">by Vic Vartanian</span>
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-4">
@@ -198,8 +209,19 @@
                     <h3 class="text-2xl font-semibold text-gray-800 mb-4">The Rebuttal Matrix (Section 8)</h3>
                     <p class="mb-4 text-gray-600">Use this tool to find the perfect response instantly. Start typing an objection like "not selling" or "too busy".</p>
                     <input type="text" id="rebuttal-search" placeholder="Search objections..." class="w-full px-4 py-2 border border-gray-300 rounded-md mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <div class="h-[400px] overflow-y-auto pr-2">
+                    <div class="h-[400px] overflow-y-auto pr-2 mb-6">
                         <div id="rebuttal-list" class="space-y-4"></div>
+                    </div>
+
+                    <div class="border-t pt-4">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2">✨ AI Rebuttal Assistant</h4>
+                        <p class="text-sm text-gray-600 mb-3">Heard an objection not on the list? Get a custom response from our AI coach.</p>
+                        <textarea id="custom-objection-input" rows="3" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Enter the custom objection here..."></textarea>
+                        <button id="generate-rebuttal-btn" class="btn mt-2 w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 flex items-center justify-center">
+                            Generate AI Rebuttal
+                        </button>
+                        <div id="ai-rebuttal-output" class="mt-4 text-sm"></div>
+                        <div id="ai-rebuttal-loader" class="hidden mx-auto mt-4 spinner"></div>
                     </div>
                 </div>
             </div>
@@ -237,10 +259,10 @@
         </div>
     </footer>
 
-    <!-- MODAL FOR DEAL STRUCTURE DETAILS -->
+    <!-- MODALS -->
     <div id="deal-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg relative">
-            <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800">&times;</button>
+            <button class="close-modal-btn absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
             <h3 id="modal-title" class="text-2xl font-bold mb-4"></h3>
             <p id="modal-description" class="text-gray-600 mb-4"></p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -256,6 +278,24 @@
              <div class="mt-4">
                 <h4 class="font-semibold">Best For...</h4>
                 <p id="modal-best-for" class="text-gray-600"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="roleplay-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="height: 80vh;">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold">✨ AI Roleplay Session</h3>
+                <button class="close-modal-btn text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            </div>
+            <div id="roleplay-context" class="p-4 bg-gray-50 text-sm text-gray-600"></div>
+            <div id="roleplay-chat-window" class="flex-grow p-4 overflow-y-auto space-y-4"></div>
+            <div id="roleplay-loader" class="hidden p-4 justify-center"><div class="spinner"></div></div>
+            <div class="p-4 border-t">
+                <div class="flex space-x-2">
+                    <textarea id="roleplay-input" class="flex-grow p-2 border border-gray-300 rounded-md" placeholder="Type your response here..." rows="2"></textarea>
+                    <button id="roleplay-send-btn" class="btn bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">Send</button>
+                </div>
             </div>
         </div>
     </div>
@@ -425,11 +465,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const motivationButtons = document.querySelectorAll('.motivation-btn');
     const motivationTitle = document.getElementById('motivation-title');
     const motivationText = document.getElementById('motivation-text');
+    let currentMotivation = 'retirement';
 
     function updateMotivationContent(motivationKey) {
+        currentMotivation = motivationKey;
         const motivationData = appData.sellerMotivations[motivationKey];
         motivationTitle.textContent = motivationData.title;
-        motivationText.innerHTML = motivationData.text; // Use innerHTML for potential formatting
+        motivationText.innerHTML = motivationData.text; 
 
         motivationButtons.forEach(btn => {
             btn.classList.remove('bg-blue-600', 'text-white');
@@ -444,12 +486,15 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', () => updateMotivationContent(button.dataset.motivation));
     });
 
-    // --- Accordions ---
+    // --- Accordions & AI Roleplay ---
+    const roleplayModal = document.getElementById('roleplay-modal');
+    let roleplayChatHistory = [];
+
     function createAccordion(containerId, data) {
         const container = document.getElementById(containerId);
         if (!container) return;
         container.innerHTML = data.map((item, index) => `
-            <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
                 <h2>
                     <button type="button" class="accordion-button flex items-center justify-between w-full p-4 font-medium text-left text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none">
                         <span class="flex-1">${item.title}</span>
@@ -457,8 +502,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                 </h2>
                 <div class="accordion-content">
-                    <div class="p-4 border-t border-gray-200 text-gray-600 bg-white">
+                    <div class="p-4 border-t border-gray-200 text-gray-600">
                         ${item.content}
+                        ${containerId === 'script-accordion' ? `<div class="mt-4"><button class="btn roleplay-start-btn bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700 text-sm" data-step-index="${index}">✨ Practice with AI</button></div>` : ''}
                     </div>
                 </div>
             </div>
@@ -470,7 +516,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const svg = button.querySelector('svg');
                 const isOpening = content.style.maxHeight === '0px' || !content.style.maxHeight;
 
-                // Close all others in the same group
                 const allButtons = container.querySelectorAll('.accordion-button');
                 allButtons.forEach(btn => {
                     if (btn !== button) {
@@ -488,14 +533,101 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+
+        if (containerId === 'script-accordion') {
+            container.querySelectorAll('.roleplay-start-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const stepIndex = button.dataset.stepIndex;
+                    startRoleplaySession(stepIndex);
+                });
+            });
+        }
+    }
+
+    function startRoleplaySession(stepIndex) {
+        const step = appData.masterScript[stepIndex];
+        const motivation = appData.sellerMotivations[currentMotivation];
+        const context = `<strong>Roleplay Scenario:</strong> You are practicing <strong>${step.title}</strong> with a business owner whose primary motivation is <strong>${motivation.title}</strong>.`;
+        document.getElementById('roleplay-context').innerHTML = context;
+        document.getElementById('roleplay-chat-window').innerHTML = '';
+        roleplayChatHistory = [];
+        roleplayModal.classList.remove('hidden');
+        roleplayModal.classList.add('flex');
+    }
+
+    const roleplaySendBtn = document.getElementById('roleplay-send-btn');
+    roleplaySendBtn.addEventListener('click', handleRoleplaySend);
+    document.getElementById('roleplay-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleRoleplaySend();
+        }
+    });
+
+    async function handleRoleplaySend() {
+        const input = document.getElementById('roleplay-input');
+        const message = input.value.trim();
+        if (!message) return;
+
+        addMessageToRoleplayChat('user', message);
+        input.value = '';
+
+        const stepContext = document.getElementById('roleplay-context').innerText;
+        const systemPrompt = `You are an AI roleplay partner acting as a New Jersey business owner. Your primary motivation is ${appData.sellerMotivations[currentMotivation].title}. You are speaking with a business broker (the user). The current context of the conversation is: "${stepContext}". Based on the user's message, respond as this business owner would. Be realistic: you can be skeptical, busy, curious, or resistant, according to your persona. Keep your responses concise and conversational.`;
+
+        roleplayChatHistory.push({ role: "user", parts: [{ text: message }] });
+
+        document.getElementById('roleplay-loader').classList.remove('hidden');
+        roleplaySendBtn.disabled = true;
+
+        try {
+            const fullPrompt = systemPrompt + "\n\nPrevious conversation:\n" + roleplayChatHistory.map(m => `${m.role}: ${m.parts[0].text}`).join("\n");
+            
+            let chatHistoryForAPI = [{ role: "user", parts: [{ text: systemPrompt }]}];
+            chatHistoryForAPI = chatHistoryForAPI.concat(roleplayChatHistory);
+
+            const payload = { contents: chatHistoryForAPI };
+            const apiKey = "AIzaSyCHQ8lcPCF-IFviKRkOkQui2zqkgGK6qNw";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            const aiResponse = result.candidates[0].content.parts[0].text;
+            addMessageToRoleplayChat('model', aiResponse);
+            roleplayChatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+        } catch (error) {
+            console.error("Gemini API error:", error);
+            addMessageToRoleplayChat('model', "Sorry, I encountered an error. Please try again.");
+        } finally {
+            document.getElementById('roleplay-loader').classList.add('hidden');
+            roleplaySendBtn.disabled = false;
+        }
+    }
+
+    function addMessageToRoleplayChat(role, text) {
+        const chatWindow = document.getElementById('roleplay-chat-window');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `p-3 rounded-lg max-w-lg ${role === 'user' ? 'bg-blue-100 self-end' : 'bg-gray-200 self-start'}`;
+        messageDiv.textContent = text;
+        
+        const wrapperDiv = document.createElement('div');
+        wrapperDiv.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+        wrapperDiv.appendChild(messageDiv);
+        
+        chatWindow.appendChild(wrapperDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
     createAccordion('script-accordion', appData.masterScript);
     createAccordion('agenda-accordion', appData.firstMeetingAgenda);
 
-    // --- Rebuttal Matrix ---
+    // --- Rebuttal Matrix & AI Assistant ---
     const rebuttalSearch = document.getElementById('rebuttal-search');
     const rebuttalList = document.getElementById('rebuttal-list');
+    const generateRebuttalBtn = document.getElementById('generate-rebuttal-btn');
 
     function renderRebuttals(filter = '') {
         const filteredRebuttals = appData.rebuttals.filter(r => 
@@ -524,12 +656,56 @@ document.addEventListener('DOMContentLoaded', function() {
     if (rebuttalSearch) {
         rebuttalSearch.addEventListener('input', (e) => renderRebuttals(e.target.value));
     }
+
+    generateRebuttalBtn.addEventListener('click', async () => {
+        const objection = document.getElementById('custom-objection-input').value;
+        if (!objection.trim()) {
+            alert("Please enter an objection.");
+            return;
+        }
+        
+        const outputDiv = document.getElementById('ai-rebuttal-output');
+        const loader = document.getElementById('ai-rebuttal-loader');
+        
+        outputDiv.innerHTML = '';
+        loader.classList.remove('hidden');
+        generateRebuttalBtn.disabled = true;
+
+        const prompt = `You are an expert sales coach specializing in business brokerage for the New Jersey market. A broker has encountered the following objection from a business owner: "${objection}". Generate a response that follows the Acknowledge-Probe-Pivot framework. The tone should be professional, empathetic, and strategic. Format the response clearly with 'Acknowledge:', 'Probe:', and 'Pivot:' labels.`;
+        
+        try {
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const apiKey = "AIzaSyCHQ8lcPCF-IFviKRkOkQui2zqkgGK6qNw";
+            const apiUrl = `https://generativelawnguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            const text = result.candidates[0].content.parts[0].text;
+            
+            // Basic formatting for the output
+            const formattedText = text
+                .replace(/Acknowledge:/g, '<p class="mt-2"><strong class="text-blue-600">Acknowledge:</strong>')
+                .replace(/Probe:/g, '</p><p class="mt-2"><strong class="text-green-600">Probe:</strong>')
+                .replace(/Pivot:/g, '</p><p class="mt-2"><strong class="text-purple-600">Pivot:</strong>') + '</p>';
+
+            outputDiv.innerHTML = `<div class="p-4 bg-gray-50 rounded-lg border">${formattedText}</div>`;
+
+        } catch(e) {
+            console.error(e);
+            outputDiv.innerHTML = `<p class="text-red-500">Error generating response. Please try again.</p>`;
+        } finally {
+            loader.classList.add('hidden');
+            generateRebuttalBtn.disabled = false;
+        }
+    });
     
     // --- Deal Structure Table & Modal ---
     const dealTableContainer = document.getElementById('deal-structure-table');
-    const modal = document.getElementById('deal-modal');
-    const closeModalBtn = document.getElementById('close-modal-btn');
-
+    const dealModal = document.getElementById('deal-modal');
+    
     function renderDealTable() {
         if (!dealTableContainer) return;
         const table = document.createElement('table');
@@ -562,24 +738,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('modal-pros').textContent = deal.pros;
                 document.getElementById('modal-cons').textContent = deal.cons;
                 document.getElementById('modal-best-for').textContent = deal.bestFor;
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
+                dealModal.classList.remove('hidden');
+                dealModal.classList.add('flex');
             });
         });
     }
 
-    if(modal) {
-        closeModalBtn.addEventListener('click', () => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+    document.querySelectorAll('.close-modal-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            btn.closest('.fixed').classList.add('hidden');
+            btn.closest('.fixed').classList.remove('flex');
         });
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        });
-    }
+    });
 
     // --- Initializations ---
     updateMotivationContent('retirement');
